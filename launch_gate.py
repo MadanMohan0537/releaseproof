@@ -177,12 +177,12 @@ def render_html(report):
                     f"<h4>Candidate</h4><pre>{escape(item['candidate_output'])}</pre></article>"
                     for item in report["differences"])
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Launch Gate · {escape(report['decision'])}</title><style>
+<title>ReleaseProof · {escape(report['decision'])}</title><style>
 body{{font:16px system-ui,sans-serif;max-width:1050px;margin:40px auto;padding:0 24px;color:#152b38;background:#f5f8fa}}
 h1{{font-size:42px}}table{{border-collapse:collapse;width:100%;background:white}}th,td{{padding:12px;border-bottom:1px solid #dce5eb;text-align:left}}
 pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#e8eff4;padding:16px;border-radius:8px}}article{{background:white;padding:18px;margin:18px 0;border-radius:12px}}
 .decision{{display:inline-block;padding:8px 20px;border-radius:20px;background:{'#ffd3c7' if report['decision']=='BLOCK' else '#c8f0d9'}}}
-</style><main><p>AI PM Project Lab · Release evaluation</p><h1>Launch Gate</h1>
+</style><main><p>AI PM Project Lab · Release evaluation</p><h1>ReleaseProof</h1>
 <h2 class="decision">{escape(report['decision'])}</h2><p>{escape(report['baseline_version'])} → {escape(report['candidate_version'])} · {report['case_count']} matched cases</p>
 <h2>Evaluation evidence</h2><pre>{escape(json.dumps({'baseline':report['baseline'],'candidate':report['candidate'],'paired':report['paired']},indent=2))}</pre>
 <h2>Policy findings</h2><pre>{escape(json.dumps(report['failures'],indent=2))}</pre>

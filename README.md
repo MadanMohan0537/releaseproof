@@ -1,4 +1,4 @@
-# Launch Gate
+# ReleaseProof
 
 A dependency-free release evaluator for recorded LLM test runs. Compare a baseline and candidate on exactly the same cases, apply a versioned policy, and produce JSON plus an HTML evidence report. A healthy overall score cannot hide a missing or regressed critical cohort.
 
@@ -60,5 +60,7 @@ The eight synthetic cases demonstrate control flow, not benchmark representative
 4. **Evaluation provenance manifest — proposed:** bind labels to scorer versions, execution settings and data licenses. Validate by changing one dependency and checking that old evidence becomes stale.
 
 ## Daily project series
+
+Original catalog idea: **#1 — Launch Gate**. Product name: **ReleaseProof**, reflecting the release evidence the tool produces.
 
 This is project 1 of the AI PM Project Lab series. Each project receives a separate public repository and a bounded tested MVP before additional scope. A daily increment is not a claim that an original multiweek platform is production-complete. The feature backlog above distinguishes implemented from proposed work.

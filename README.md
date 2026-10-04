@@ -8,6 +8,14 @@ Built for developers and AI product teams evaluating prompt, model or configurat
 
 **Project status:** working portfolio MVP using eight synthetic example cases. Bring results from your own evaluation runner to assess a real application.
 
+## Choose the right release-evidence tool
+
+ReleaseProof consumes evaluation results you already have. It does not call a model, run a retrieval pipeline or generate responses. Use a separate evaluation runner to produce comparable baseline and candidate JSON, then apply the policy here.
+
+Start with [example inputs](examples/), inspect the policy and run the CLI from the quick start. Before adopting a result, confirm that case identifiers, critical slices, latency units and cost units align across the two runs. A PASS applies to this evidence and policy; it does not guarantee behavior outside the evaluated cases.
+
+See [FEATURES.md](FEATURES.md) for the feature inventory and [tests](tests/) for gate behavior, including blocked regressions and malformed input.
+
 ## Why it exists
 
 An overall accuracy score can look healthy while a small, important group of scenarios gets worse. A release can also appear successful because its hardest tests were omitted.

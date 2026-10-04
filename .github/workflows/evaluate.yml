@@ -1,0 +1,28 @@
+name: Test release gate
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run unit and CLI tests
+        run: python -m unittest discover -s tests -v
+      - name: Evaluate passing candidate
+        run: python launch_gate.py examples/baseline.json examples/candidate-good.json --policy examples/policy.json --report reports/good.json --html reports/good.html
+      - name: Prove regression blocks
+        shell: bash
+        run: |
+          set +e
+          python launch_gate.py examples/baseline.json examples/candidate-bad.json --policy examples/policy.json --report reports/bad.json --html reports/bad.html
+          status=$?
+          set -e
+          test "$status" -eq 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          path: reports/

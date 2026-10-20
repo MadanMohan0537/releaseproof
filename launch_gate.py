@@ -13,6 +13,7 @@ import sys
 
 QUALITY_FIELDS = ("correct", "grounded", "safe", "refusal_correct")
 NUMERIC_FIELDS = ("latency_ms", "cost_usd")
+PROVENANCE_FIELDS = ("dataset_revision", "scorer_revision", "rubric_revision")
 
 
 def number(value, label, minimum=0, maximum=None):
@@ -26,6 +27,12 @@ def number(value, label, minimum=0, maximum=None):
 def validate_run(run):
     if not isinstance(run, dict) or not isinstance(run.get("version"), str) or not run["version"].strip():
         raise ValueError("run requires a nonempty version string")
+    provenance = run.get("provenance")
+    if provenance is not None:
+        if not isinstance(provenance, dict) or set(provenance) != set(PROVENANCE_FIELDS):
+            raise ValueError("provenance requires exactly dataset_revision, scorer_revision and rubric_revision")
+        if any(not isinstance(value, str) or not value.strip() for value in provenance.values()):
+            raise ValueError("provenance revisions must be nonempty strings")
     cases = run.get("cases")
     if not isinstance(cases, list) or not cases:
         raise ValueError("run requires a nonempty cases list")
@@ -53,9 +60,12 @@ def validate_policy(policy):
     if not isinstance(policy, dict):
         raise ValueError("policy must be an object")
     allowed = {"minimum_quality", "maximum_quality_drop", "maximum_p95_latency_ms",
-               "maximum_cost_per_1000_usd", "critical_cohorts", "bootstrap_samples", "seed"}
+               "maximum_cost_per_1000_usd", "critical_cohorts", "bootstrap_samples", "seed",
+               "require_provenance"}
     if set(policy) - allowed:
         raise ValueError(f"unknown policy fields: {sorted(set(policy) - allowed)}")
+    if not isinstance(policy.get("require_provenance", False), bool):
+        raise ValueError("require_provenance must be boolean")
     for field in ("minimum_quality", "maximum_quality_drop"):
         number(policy.get(field), field, maximum=1)
     for field in ("maximum_p95_latency_ms", "maximum_cost_per_1000_usd"):
@@ -119,6 +129,8 @@ def compare(baseline, candidate, policy):
     ids = sorted(old)
     old_metrics, new_metrics = metrics(list(old.values())), metrics(list(new.values()))
     failures = []
+    provenance = provenance_evidence(baseline, candidate, policy)
+    failures.extend(provenance.pop("failures"))
     for label, value, threshold in [("quality", new_metrics["quality"], policy["minimum_quality"]),
                                    ("quality_delta", new_metrics["quality"] - old_metrics["quality"], -policy["maximum_quality_drop"])]:
         if value < threshold - 1e-12:
@@ -163,7 +175,25 @@ def compare(baseline, candidate, policy):
                        "samples": policy.get("bootstrap_samples", 2000),
                        "interpretation": "Descriptive case-resampling interval; no repeated model-run uncertainty or production-safety guarantee."},
             "cohorts": cohorts, "failures": failures, "differences": differences,
+            "provenance": provenance,
             "evidence_hashes": {"baseline": digest(baseline), "candidate": digest(candidate), "policy": digest(policy)}}
+
+
+def provenance_evidence(baseline, candidate, policy):
+    """Compare declared evaluation context, never candidate model/prompt identity."""
+    old, new = baseline.get("provenance"), candidate.get("provenance")
+    missing = [name for name, value in (("baseline", old), ("candidate", new)) if value is None]
+    changes = [field for field in PROVENANCE_FIELDS if old and new and old[field] != new[field]]
+    failures = []
+    # Once either producer declares provenance, silently falling back is unsafe.
+    if missing and (policy.get("require_provenance", False) or len(missing) != 2):
+        failures.append({"rule": "missing_provenance", "runs": missing})
+    if changes:
+        failures.append({"rule": "incomparable_provenance", "fields": changes})
+    return {"status": "blocked" if failures else "unverified" if missing else "matched",
+            "baseline": old, "candidate": new, "changed_fields": changes,
+            "interpretation": "Self-declared revisions; matching metadata is not authentication.",
+            "failures": failures}
 
 
 def render_html(report):
@@ -186,6 +216,7 @@ pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#e8eff4;padding:16px
 <h2 class="decision">{escape(report['decision'])}</h2><p>{escape(report['baseline_version'])} → {escape(report['candidate_version'])} · {report['case_count']} matched cases</p>
 <h2>Evaluation evidence</h2><pre>{escape(json.dumps({'baseline':report['baseline'],'candidate':report['candidate'],'paired':report['paired']},indent=2))}</pre>
 <h2>Policy findings</h2><pre>{escape(json.dumps(report['failures'],indent=2))}</pre>
+<h2>Evaluation provenance</h2><pre>{escape(json.dumps(report['provenance'],indent=2))}</pre>
 <h2>Critical cohort coverage</h2><table><thead><tr><th>Cohort</th><th>Cases</th><th>Required</th><th>Debt</th><th>Quality</th><th>Delta</th></tr></thead><tbody>{rows}</tbody></table>
 <h2>Case differences</h2>{diffs or '<p>No case differences.</p>'}
 <h2>Evidence hashes</h2><pre>{escape(json.dumps(report['evidence_hashes'],indent=2))}</pre>
@@ -219,3 +250,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+

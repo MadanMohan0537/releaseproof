@@ -181,7 +181,7 @@ The processing path is: validate inputs, pair case IDs, calculate metrics, apply
 
 ## Verification
 
-**19 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping and CLI exit codes.
+**27 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping, CLI exit codes and evaluation provenance compatibility.
 
 Run the suite with:
 
@@ -200,11 +200,35 @@ The small synthetic dataset demonstrates control flow. Case counts do not establ
 | Status | Scope |
 |---|---|
 | Implemented | Paired outcomes, descriptive bootstrap evidence, critical-cohort coverage debt, policy checks, reports and example CI |
-| Next | Live evaluation adapter, scorer/configuration provenance, representative test corpus and repeated-run noise study |
+| Next | Live evaluation adapter, representative test corpus and repeated-run noise study |
 | Proposed | Scenario diversity checks, failure minimization, baseline promotion, release trends and PR summaries |
 
 Only public or synthetic fixtures belong in this public repository. Original catalog reference: **AI PM Project Lab, idea #1 — Launch Gate**. The built product is **ReleaseProof**.
 
+## Evaluation provenance compatibility
+
+Add an optional top-level object to both recorded runs:
+
+```json
+{"provenance": {"dataset_revision": "faq-v1", "scorer_revision": "checks-v1", "rubric_revision": "rubric-v1"}}
+```
+
+Set `"require_provenance": true` in the policy to require it. All three revisions
+must be nonempty strings and match across runs. A changed dataset, scorer or rubric
+blocks even perfect scores; a one-sided declaration also blocks. Candidate model
+and prompt versions may differ: those are the change being evaluated.
+
+Both legacy runs without provenance still work by default, but reports mark their
+context `unverified`. Partial objects and unknown fields are invalid input.
+JSON and HTML show the context, changed fields and compatibility status; evidence
+hashes include this metadata. These are self-declarations, not signatures or proof
+that a scorer executed honestly. Never put secrets in revision strings.
+
+Run `python examples/provenance_demo.py` for a matched PASS control and a changed
+scorer BLOCK at 100% candidate quality. CI runs this and all tests on Python
+3.11–3.13. [PROGRESS.md](PROGRESS.md) records the project rotation.
+
 ## Contributing
 
 Open an issue with a concrete evaluation failure, expected behavior and a minimal synthetic example. For a pull request, explain which decision it improves, add a meaningful regression test when behavior changes, and run the existing suite. Keep new dependencies justified and separate implemented capabilities from proposals.
+

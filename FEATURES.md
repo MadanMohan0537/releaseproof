@@ -1,5 +1,17 @@
 # Feature decision record
 
+## Local deterministic FAQ adapter — shipped November 5, 2026
+
+**Problem/trigger:** recorded quality labels had no reproducible origin, so a passing gate could not be independently reconstructed.
+
+**Behavior:** validate a frozen corpus, rubric and complete answer set; score required facts, expected-source grounding, forbidden phrases and refusal behavior; emit a ReleaseProof-compatible run. Bind corpus, rubric and scorer source digests into provenance.
+
+**Dependencies:** Python standard library and synthetic JSON fixtures only. No service, credential or paid API.
+
+**Success test:** the clean six-case control scores 6/6 and passes. A seeded diagnosis/dosage answer scores 5/6 and blocks on aggregate regression, unsafe case, safety-cohort quality and safety-cohort regression. Missing answers and duplicate document IDs fail closed.
+
+**Risks/tradeoffs:** substring scoring is inspectable but rejects some valid paraphrases and can accept carefully worded nonsense. Frozen synthetic cases demonstrate reproducibility, not production representativeness or scorer validity.
+
 ## Evaluation provenance compatibility — shipped October 20, 2026
 
 **Problem/trigger:** identical case IDs can hide a changed scorer, rubric or dataset.
@@ -25,11 +37,12 @@ existing consumers but cannot establish their comparability.
 
 | Priority | Problem and behavior | Dependencies | Success test | Risks/tradeoffs |
 |---|---|---|---|---|
-| P0 | Recorded labels lack a reproducible origin; add local FAQ runner with frozen corpus and deterministic scorers. | Versioned corpus, adapter contract | Seeded answer defect blocks and clean control passes. | Exact scoring misses valid paraphrases. |
 | P1 | Run noise causes false blocks; compare repeated baseline/candidate batches. | Repeated-run fixtures | Predeclared false-block target on held-out simulations. | Calibration cost and correlated runs. |
-| P1 | Revision claims can lie; bind provenance to local artifact digests. | Artifact manifest | Mutated artifact rejected with unchanged revision label. | Digests still do not authenticate execution. |
+| P1 | Revision claims can lie outside the local adapter; add signed execution manifests. | Signing identity, artifact manifest | Tampered artifact or manifest is rejected. | Key management and signatures still do not prove scorer validity. |
 | P2 | Duplicate scenarios inflate coverage; audit scenario tags and exact duplicates. | Scenario metadata | Seeded duplicate inflation cannot clear coverage debt. | Semantic duplicates need human review. |
 | P2 | Reviewers cannot track release trends; export comparable historical reports. | Provenance-compatible report store | Mixed-scorer histories are separated, never silently pooled. | Selective history can mislead. |
+| P2 | Exact facts penalize valid paraphrases; add a reviewed equivalence-set scorer and disagreement queue. | Human-reviewed aliases | Held-out valid paraphrases pass without increasing seeded false accepts. | Alias lists can overfit and need governance. |
+| P3 | Synthetic FAQs may not represent real traffic; evaluate a versioned public FAQ corpus by cohort. | Public corpus, usage-informed taxonomy | Holdout accuracy and critical-cohort coverage meet predeclared floors. | Public questions differ from production traffic. |
 
 ## Paired regression evidence
 
@@ -58,4 +71,5 @@ existing consumers but cannot establish their comparability.
 ## Why these first
 
 They address two concrete ways a release can look safe: aggregate scores conceal critical regressions, and absent cases never contribute errors. Both have falsifiable synthetic tests and integrate with the baseline release decision. A dashboard alone would not change that decision. Live execution, better scorer provenance and real representative datasets should precede further UI investment.
+
 

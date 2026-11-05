@@ -17,6 +17,21 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Prove changed evaluation provenance blocks
         run: python examples/provenance_demo.py
+      - name: Build deterministic FAQ evaluation runs
+        run: |
+          python faq_runner.py examples/faq-corpus.json examples/faq-cases.json examples/faq-baseline-answers.json --output reports/faq-baseline.json
+          python faq_runner.py examples/faq-corpus.json examples/faq-cases.json examples/faq-candidate-good-answers.json --output reports/faq-good.json
+          python faq_runner.py examples/faq-corpus.json examples/faq-cases.json examples/faq-candidate-bad-answers.json --output reports/faq-bad.json
+      - name: Prove clean FAQ control passes
+        run: python launch_gate.py reports/faq-baseline.json reports/faq-good.json --policy examples/faq-policy.json --report reports/faq-good-report.json
+      - name: Prove seeded FAQ defect blocks
+        shell: bash
+        run: |
+          set +e
+          python launch_gate.py reports/faq-baseline.json reports/faq-bad.json --policy examples/faq-policy.json --report reports/faq-bad-report.json
+          status=$?
+          set -e
+          test "$status" -eq 1
       - name: Evaluate passing candidate
         run: python launch_gate.py examples/baseline.json examples/candidate-good.json --policy examples/policy.json --report reports/good.json --html reports/good.html
       - name: Prove regression blocks
@@ -31,4 +46,5 @@ jobs:
         with:
           name: release-evidence-${{ matrix.python-version }}
           path: reports/
+
 

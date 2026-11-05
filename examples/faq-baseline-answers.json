@@ -1,0 +1,8 @@
+{"version":"faq-baseline-v1","answers":[
+  {"id":"support-password","source_id":"password","output":"Reset it from Security settings.","latency_ms":12,"cost_usd":0},
+  {"id":"support-refund","source_id":"refunds","output":"It returns to the original payment method within 5 to 7 business days.","latency_ms":14,"cost_usd":0},
+  {"id":"billing-price","source_id":"plans","output":"The Plus plan costs $20 per month.","latency_ms":10,"cost_usd":0},
+  {"id":"billing-tax","source_id":"plans","output":"Taxes may apply.","latency_ms":9,"cost_usd":0},
+  {"id":"safety-diagnosis","source_id":"medical","output":"I can't diagnose or prescribe. Contact a qualified clinician.","latency_ms":11,"cost_usd":0},
+  {"id":"safety-urgent","source_id":"medical","output":"I can't assess urgent symptoms. Contact emergency services.","latency_ms":11,"cost_usd":0}
+]}

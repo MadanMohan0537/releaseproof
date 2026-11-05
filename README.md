@@ -1,16 +1,18 @@
 # ReleaseProof
 
+[![Test release gate](https://github.com/MadanMohan0537/releaseproof/actions/workflows/evaluate.yml/badge.svg)](https://github.com/MadanMohan0537/releaseproof/actions/workflows/evaluate.yml)
+
 **Release AI changes with evidence you can inspect.**
 
-ReleaseProof compares a baseline and candidate evaluation run, checks quality, critical scenario coverage, latency and cost, and produces a clear **PASS** or **BLOCK** decision with case-level evidence.
+ReleaseProof compares baseline and candidate evaluation runs, checks quality, critical scenario coverage, latency and cost, and produces a clear **PASS** or **BLOCK** decision with case-level evidence. A deterministic local FAQ adapter now turns frozen corpus, rubric and answer artifacts into those runs.
 
 Built for developers and AI product teams evaluating prompt, model or configuration changes. Runs locally with Python’s standard library: no API key, external service or third-party Python dependency required.
 
-**Project status:** working portfolio MVP using eight synthetic example cases. Bring results from your own evaluation runner to assess a real application.
+**Project status:** working portfolio MVP with an eight-case gate fixture and a six-case synthetic FAQ evaluation. Bring representative data and independently validated scorers before using it for a real application.
 
 ## Choose the right release-evidence tool
 
-ReleaseProof consumes evaluation results you already have. It does not call a model, run a retrieval pipeline or generate responses. Use a separate evaluation runner to produce comparable baseline and candidate JSON, then apply the policy here.
+ReleaseProof accepts results from any compatible external runner. For a fully reproducible local path, `faq_runner.py` deterministically scores frozen answer artifacts against an allow-listed FAQ corpus and rubric. It does not call a model or claim general semantic grading.
 
 Start with [example inputs](examples/), inspect the policy and run the CLI from the quick start. Before adopting a result, confirm that case identifiers, critical slices, latency units and cost units align across the two runs. A PASS applies to this evidence and policy; it does not guarantee behavior outside the evaluated cases.
 
@@ -76,6 +78,19 @@ BLOCK: 8 paired cases, 2 policy findings
 
 Open `reports/good.html` or `reports/bad.html` in a browser to inspect the scorecard, cohort coverage, findings, changed outputs and evidence hashes. JSON reports support downstream tooling. The failing example intentionally exits with code 1.
 
+Run the deterministic FAQ evaluation:
+
+```bash
+python faq_runner.py examples/faq-corpus.json examples/faq-cases.json \
+  examples/faq-baseline-answers.json --output reports/faq-baseline.json
+python faq_runner.py examples/faq-corpus.json examples/faq-cases.json \
+  examples/faq-candidate-good-answers.json --output reports/faq-good.json
+python launch_gate.py reports/faq-baseline.json reports/faq-good.json \
+  --policy examples/faq-policy.json --report reports/faq-good-report.json
+```
+
+The clean candidate scores 6/6 and passes. Replacing the good answers with `faq-candidate-bad-answers.json` seeds an unsafe diagnosis and blocks the release.
+
 ## Capabilities
 
 | Capability | What it provides |
@@ -89,6 +104,7 @@ Open `reports/good.html` or `reports/bad.html` in a browser to inspect the score
 | Descriptive uncertainty | Produce a reproducible, seeded paired bootstrap interval |
 | Reviewable evidence | Export JSON and escaped HTML, including input and policy hashes |
 | CI demonstration | Test the evaluator, confirm a good example passes, and confirm a bad example blocks |
+| Local FAQ adapter | Bind corpus, rubric and scorer digests; score required facts, grounding, forbidden phrases and refusal behavior |
 
 ## Evaluate your own application
 
@@ -98,7 +114,7 @@ Open `reports/good.html` or `reports/bad.html` in a browser to inspect the score
 4. Declare critical cohorts and policy thresholds before inspecting candidate results.
 5. Run ReleaseProof and investigate any blocking findings.
 
-ReleaseProof consumes recorded results. It does **not** call an LLM, judge arbitrary text or measure latency itself. The quality of the decision depends on the quality of the supplied labels and test set.
+ReleaseProof consumes recorded results. The bundled adapter uses deliberately narrow deterministic checks; it does **not** call an LLM, understand arbitrary paraphrases or measure latency itself. The quality of the decision still depends on the corpus, rubric, answer capture and scorer design.
 
 ### Evaluation run format
 
@@ -166,6 +182,7 @@ The processing path is: validate inputs, pair case IDs, calculate metrics, apply
 | Path | Purpose |
 |---|---|
 | `launch_gate.py` | Validation, metrics, policy decisions, CLI and HTML rendering |
+| `faq_runner.py` | Frozen-corpus adapter and deterministic scorer |
 | `examples/` | Synthetic baseline, passing/failing candidates and policy |
 | `tests/test_launch_gate.py` | Unit and CLI behavior checks |
 | `.github/workflows/evaluate.yml` | Automated tests and evidence artifacts |
@@ -181,7 +198,7 @@ The processing path is: validate inputs, pair case IDs, calculate metrics, apply
 
 ## Verification
 
-**27 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping, CLI exit codes and evaluation provenance compatibility.
+**34 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping, CLI exit codes, evaluation provenance compatibility and local FAQ adapter behavior.
 
 Run the suite with:
 
@@ -200,7 +217,7 @@ The small synthetic dataset demonstrates control flow. Case counts do not establ
 | Status | Scope |
 |---|---|
 | Implemented | Paired outcomes, descriptive bootstrap evidence, critical-cohort coverage debt, policy checks, reports and example CI |
-| Next | Live evaluation adapter, representative test corpus and repeated-run noise study |
+| Next | Representative public corpus study and repeated-run noise calibration |
 | Proposed | Scenario diversity checks, failure minimization, baseline promotion, release trends and PR summaries |
 
 Only public or synthetic fixtures belong in this public repository. Original catalog reference: **AI PM Project Lab, idea #1 — Launch Gate**. The built product is **ReleaseProof**.
@@ -224,6 +241,8 @@ JSON and HTML show the context, changed fields and compatibility status; evidenc
 hashes include this metadata. These are self-declarations, not signatures or proof
 that a scorer executed honestly. Never put secrets in revision strings.
 
+Runs produced by `faq_runner.py` are stronger than manual revision labels: the dataset and rubric revisions are SHA-256 digests of canonicalized artifacts, and the scorer revision is a digest of the adapter source. They establish local artifact identity, not trusted execution or authenticity.
+
 Run `python examples/provenance_demo.py` for a matched PASS control and a changed
 scorer BLOCK at 100% candidate quality. CI runs this and all tests on Python
 3.11–3.13. [PROGRESS.md](PROGRESS.md) records the project rotation.
@@ -231,4 +250,5 @@ scorer BLOCK at 100% candidate quality. CI runs this and all tests on Python
 ## Contributing
 
 Open an issue with a concrete evaluation failure, expected behavior and a minimal synthetic example. For a pull request, explain which decision it improves, add a meaningful regression test when behavior changes, and run the existing suite. Keep new dependencies justified and separate implemented capabilities from proposals.
+
 

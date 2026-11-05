@@ -1,0 +1,6 @@
+[
+  {"id": "password", "title": "Password safety", "text": "Reset your password from Security settings. Support will never ask for your password."},
+  {"id": "refunds", "title": "Refund timing", "text": "Refunds return to the original payment method within 5 to 7 business days."},
+  {"id": "plans", "title": "Plus plan billing", "text": "The Plus plan costs $20 per month. Taxes may apply."},
+  {"id": "medical", "title": "Medical safety boundary", "text": "The assistant cannot diagnose symptoms. Contact a qualified clinician or emergency services for urgent symptoms."}
+]

@@ -111,6 +111,57 @@ def paired_interval(deltas, samples, seed):
     return [quantile(means, .025), quantile(means, .975)]
 
 
+def repeated_run_noise_study(calibration_runs, control_runs, candidate_runs,
+                             false_block_target=.1, minimum_calibration_runs=6):
+    """Calibrate a one-sided quality noise band and test it on held-out repeats."""
+    if (isinstance(false_block_target, bool) or not isinstance(false_block_target, (int, float))
+            or not 0 < false_block_target <= .5):
+        raise ValueError("false_block_target must be greater than 0 and at most 0.5")
+    if (isinstance(minimum_calibration_runs, bool) or not isinstance(minimum_calibration_runs, int)
+            or minimum_calibration_runs < 3):
+        raise ValueError("minimum_calibration_runs must be an integer of at least 3")
+    groups=(calibration_runs,control_runs,candidate_runs)
+    if any(not isinstance(group,list) or not group for group in groups):
+        raise ValueError("calibration, control and candidate runs must be nonempty lists")
+    if len(calibration_runs)<minimum_calibration_runs:
+        raise ValueError("insufficient calibration runs")
+    if len(control_runs)<3 or len(candidate_runs)<3:
+        raise ValueError("control and candidate studies require at least three runs")
+    for run in [item for group in groups for item in group]:
+        validate_run(run)
+    reference=calibration_runs[0]
+    reference_ids={case["id"]:case["cohort"] for case in reference["cases"]}
+    reference_provenance=reference.get("provenance")
+    for run in [item for group in groups for item in group]:
+        case_ids={case["id"]:case["cohort"] for case in run["cases"]}
+        if case_ids!=reference_ids:
+            raise ValueError("repeated runs require identical case IDs and cohort tags")
+        if run.get("provenance")!=reference_provenance:
+            raise ValueError("repeated runs require identical evaluation provenance")
+    qualities=lambda runs:[metrics(run["cases"])["quality"] for run in runs]
+    calibration_quality=qualities(calibration_runs)
+    control_quality=qualities(control_runs)
+    candidate_quality=qualities(candidate_runs)
+    center=statistics.mean(calibration_quality)
+    observed_drops=[max(0,center-value) for value in calibration_quality]
+    allowed_drop=quantile(observed_drops,1-false_block_target)
+    threshold=center-allowed_drop
+    control_blocks=sum(value<threshold-1e-12 for value in control_quality)
+    candidate_mean=statistics.mean(candidate_quality)
+    return {
+        "calibration_runs":len(calibration_runs),"control_runs":len(control_runs),
+        "candidate_runs":len(candidate_runs),"case_count":len(reference_ids),
+        "calibration_quality_mean":round(center,10),"calibration_quality_range":[min(calibration_quality),max(calibration_quality)],
+        "allowed_quality_drop":round(allowed_drop,10),"quality_threshold":round(threshold,10),
+        "false_block_target":false_block_target,"heldout_false_blocks":control_blocks,
+        "heldout_false_block_rate":round(control_blocks/len(control_quality),10),
+        "heldout_target_met":control_blocks/len(control_quality)<=false_block_target,
+        "candidate_quality_mean":round(candidate_mean,10),"candidate_quality_delta":round(candidate_mean-center,10),
+        "systematic_regression":candidate_mean<threshold-1e-12,
+        "interpretation":"Fixture calibration for repeated overall quality only; never overrides safety, coverage, provenance, cost or latency policy failures.",
+    }
+
+
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
                                     allow_nan=False).encode()).hexdigest()

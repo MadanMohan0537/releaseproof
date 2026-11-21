@@ -1,5 +1,16 @@
 # Existing-project improvement record
 
+## 2026-11-21 — ReleaseProof
+
+- Re-inspected source, 34 tests, CI, README, feature record, history and Project Lab extensions.
+- Shipped the highest-priority unbuilt feature: repeated-run quality noise calibration with held-out false-block evidence.
+- Eight calibration repeats learn a 6.25-point one-sided drop band; ten held-out controls produce 0% false blocks against a predeclared 10% target.
+- Ten seeded candidate repeats average a 15-point decline and are classified as a systematic regression.
+- Added provenance/case compatibility checks, a deterministic CLI report, nine regression tests and CI execution; 43 tests now pass locally.
+- Boundaries: the fixture is small and discrete, estimates only overall quality, and does not model correlated runs or real model stochasticity; it cannot waive hard policy failures.
+- Next repository in the rotation: VerdictLens (#2).
+- Next ReleaseProof priority: scenario-duplication auditing, followed by signed execution manifests.
+
 ## 2026-11-05 — ReleaseProof
 
 - Re-inspected source, 27 tests, CI, README, feature record, history and Project Lab extensions.

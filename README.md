@@ -91,6 +91,14 @@ python launch_gate.py reports/faq-baseline.json reports/faq-good.json \
 
 The clean candidate scores 6/6 and passes. Replacing the good answers with `faq-candidate-bad-answers.json` seeds an unsafe diagnosis and blocks the release.
 
+Run the repeated-run noise study:
+
+```bash
+python noise_study.py examples/baseline.json --output reports/noise-study.json
+```
+
+The frozen experiment uses eight calibration repeats, ten held-out control repeats and ten seeded candidate repeats. It learns a one-sided 6.25-point quality band, records a 0% held-out false-block rate against a predeclared 10% target, and detects the seeded 15-point mean decline. This study supplements the gate; it cannot waive safety, coverage, provenance, cost or latency failures.
+
 ## Capabilities
 
 | Capability | What it provides |
@@ -105,6 +113,7 @@ The clean candidate scores 6/6 and passes. Replacing the good answers with `faq-
 | Reviewable evidence | Export JSON and escaped HTML, including input and policy hashes |
 | CI demonstration | Test the evaluator, confirm a good example passes, and confirm a bad example blocks |
 | Local FAQ adapter | Bind corpus, rubric and scorer digests; score required facts, grounding, forbidden phrases and refusal behavior |
+| Repeated-run noise study | Calibrate a one-sided overall-quality band, measure held-out false blocks and detect a systematic candidate decline |
 
 ## Evaluate your own application
 
@@ -183,6 +192,7 @@ The processing path is: validate inputs, pair case IDs, calculate metrics, apply
 |---|---|
 | `launch_gate.py` | Validation, metrics, policy decisions, CLI and HTML rendering |
 | `faq_runner.py` | Frozen-corpus adapter and deterministic scorer |
+| `noise_study.py` | Repeated-run calibration, held-out control and seeded-regression experiment |
 | `examples/` | Synthetic baseline, passing/failing candidates and policy |
 | `tests/test_launch_gate.py` | Unit and CLI behavior checks |
 | `.github/workflows/evaluate.yml` | Automated tests and evidence artifacts |
@@ -198,7 +208,7 @@ The processing path is: validate inputs, pair case IDs, calculate metrics, apply
 
 ## Verification
 
-**34 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping, CLI exit codes, evaluation provenance compatibility and local FAQ adapter behavior.
+**43 local tests pass.** Coverage includes critical regressions hidden by aggregate results, absent cohorts, removed and duplicate cases, changed tags, malformed labels, invalid numbers, policy typos, cost/latency breaches, order-independent pairing, deterministic reports, HTML escaping, CLI exit codes, evaluation provenance compatibility, local FAQ adapter behavior and repeated-run calibration validation.
 
 Run the suite with:
 
@@ -212,13 +222,13 @@ The passing and blocking examples are reproducible fixtures, not evidence that t
 
 A PASS means the supplied recorded evaluation met the supplied policy. It does not certify production safety.
 
-The small synthetic dataset demonstrates control flow. Case counts do not establish scenario diversity, and repeated model-run variation, label uncertainty and correlated cases are not modeled. Small or uniform samples can yield misleadingly narrow bootstrap intervals. Use representative data and independently validated scorers before relying on release decisions.
+The small synthetic dataset demonstrates control flow. Case counts do not establish scenario diversity. The repeated-run study now models a bounded quality fluctuation fixture, but it does not reproduce real model stochasticity, label uncertainty, traffic mix changes or correlated infrastructure failures. Small or uniform samples can yield misleadingly narrow bands. Use representative repeated runs and independently validated scorers before relying on release decisions.
 
 | Status | Scope |
 |---|---|
 | Implemented | Paired outcomes, descriptive bootstrap evidence, critical-cohort coverage debt, policy checks, reports and example CI |
-| Next | Representative public corpus study and repeated-run noise calibration |
-| Proposed | Scenario diversity checks, failure minimization, baseline promotion, release trends and PR summaries |
+| Next | Scenario-duplication auditing and representative public-corpus evaluation |
+| Proposed | Signed execution manifests, failure minimization, baseline promotion, release trends and PR summaries |
 
 Only public or synthetic fixtures belong in this public repository. Original catalog reference: **AI PM Project Lab, idea #1 — Launch Gate**. The built product is **ReleaseProof**.
 

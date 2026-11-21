@@ -17,6 +17,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Prove changed evaluation provenance blocks
         run: python examples/provenance_demo.py
+      - name: Calibrate repeated-run noise and prove seeded decline
+        run: python noise_study.py examples/baseline.json --output reports/noise-study.json
       - name: Build deterministic FAQ evaluation runs
         run: |
           python faq_runner.py examples/faq-corpus.json examples/faq-cases.json examples/faq-baseline-answers.json --output reports/faq-baseline.json
